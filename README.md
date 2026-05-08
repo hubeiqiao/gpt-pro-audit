@@ -19,6 +19,9 @@ The skill focuses on:
 - using the best available ChatGPT GPT-5.5 Pro (Extended Thinking) option
 - running up to 5 review rounds until GPT Pro accepts the revised plan
 - actively revising the artifact between rounds instead of just relaying feedback
+- resuming smoothly after browser slowdowns or context compaction with a local audit state file
+- disclosing whether the audit will create a normal ChatGPT history record before submission
+- avoiding repeated upload retries and using targeted follow-up prompts for later rounds
 - using the Chrome plugin workflow safely
 - avoiding secret/private-data leaks
 - treating ChatGPT as an external reviewer, not an authority
@@ -51,6 +54,7 @@ Use gpt-pro-audit to send this plan to ChatGPT GPT-5.5 Pro (Extended Thinking) f
 - Chrome installed and enabled in the Codex app, with the Chrome connector/plugin available to the agent.
 - An authenticated ChatGPT session in that Chrome profile.
 - User approval before sending any sensitive, private, or proprietary data.
+- Awareness that, unless Temporary Chat or no-history mode is used, the audit appears in the user's normal ChatGPT history.
 
 ## License
 

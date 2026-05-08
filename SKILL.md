@@ -12,6 +12,7 @@ Use this skill to automatically get an external audit from the best available Ch
 - The user has a ChatGPT Pro account with access to ChatGPT GPT-5.5 Pro (Extended Thinking) or the strongest available Pro reasoning option.
 - Chrome is installed and enabled in the Codex app, with the Chrome connector/plugin available to the agent.
 - The user is already signed in to ChatGPT in that Chrome profile, or is ready to sign in before the audit starts.
+- Unless Temporary Chat or chat history controls are explicitly enabled in ChatGPT, the audit will create a normal ChatGPT conversation in the user's account history.
 
 **REQUIRED SUB-SKILL:** Use `Chrome:Chrome` for all Chrome browser work, or the local Chrome connector/skill with equivalent capabilities.
 
@@ -38,7 +39,9 @@ Generate a unique review ID before preparing the audit so concurrent reviews do 
 REVIEW_ID=$(uuidgen | tr '[:upper:]' '[:lower:]' | head -c 8)
 ```
 
-When local files are useful, use session-scoped temp paths such as `/tmp/gpt-pro-audit-${REVIEW_ID}-context.md` and `/tmp/gpt-pro-audit-${REVIEW_ID}-round-N.md`. If there is no plan, diff, document, or artifact in the current conversation, ask the user what they want reviewed before opening ChatGPT.
+When local files are useful, use session-scoped temp paths such as `/tmp/gpt-pro-audit-${REVIEW_ID}-context.md`, `/tmp/gpt-pro-audit-${REVIEW_ID}-state.md`, and `/tmp/gpt-pro-audit-${REVIEW_ID}-round-N.md`. If there is no plan, diff, document, or artifact in the current conversation, ask the user what they want reviewed before opening ChatGPT.
+
+Maintain `/tmp/gpt-pro-audit-${REVIEW_ID}-state.md` throughout the run with: artifact path/name, sanitized payload summary, approximate size, ChatGPT conversation URL, visible model, round count, each verdict, accepted changes, rejected findings, unresolved blockers, and whether ChatGPT history or Temporary Chat was used. Update it before submission and after every round so the loop can resume after context compaction or browser slowdown.
 
 Before opening ChatGPT, automatically assemble one prompt with:
 
@@ -59,7 +62,28 @@ Before submission, perform a sensitivity pass:
 - strip auth headers, cookies, tokens, and environment variable values
 - avoid sending raw production logs; send redacted excerpts only
 
-If the artifact is a local file, try file upload first. If upload fails, paste the content into the prompt and tell the user the upload was blocked.
+For local files, choose the transport using the Transport Strategy below and tell the user when file upload is blocked or paste fallback will be used.
+
+Before the first submission, ask for one explicit confirmation unless the user has already confirmed this exact payload in the current turn. The confirmation must state:
+
+- what artifact names or sections will be sent
+- approximate payload size and whether it is full, partial, or targeted
+- what sensitive data categories were excluded
+- the visible ChatGPT model/effort
+- whether the audit will create a normal ChatGPT history record or use Temporary Chat/no-history mode
+
+After confirmation, do not ask again for later rounds unless a new artifact or new sensitive data category would be sent.
+
+## Transport Strategy
+
+Choose the lowest-friction transport that still gives ChatGPT enough context:
+
+1. Estimate payload size before using Chrome.
+2. Prefer file upload for large local artifacts. If upload fails once with a permissions/browser error, record the blocker and switch strategy; do not repeatedly retry hidden inputs, chooser paths, and alternate buttons.
+3. Use paste fallback for small or moderate payloads. For large paste fallback, keep the first prompt compact and focused: artifact summary, relevant excerpts, repo context, constraints, and exact questions. Ask the user before pasting a very large full document.
+4. For follow-up rounds after `VERDICT: REVISE`, send only the revised sections, prior blocking findings, accepted/rejected change list, and unresolved gaps unless ChatGPT explicitly needs the whole artifact again.
+5. Do not send tiny "test" messages to validate the composer. Verify controls by page state and accessibility tree only.
+6. If a browser action times out after a submit attempt, inspect the conversation URL, composer state, and latest assistant message before retrying. Never blindly submit the same long prompt twice.
 
 ## Prompt Template
 
@@ -113,8 +137,11 @@ For each round:
 7. Prepare a follow-up prompt with the revised artifact, what changed, what was rejected, and any unresolved evidence gaps.
 8. Continue in the same ChatGPT conversation so prior review context is preserved.
 9. Ask ChatGPT to re-audit only the revised plan and prior blocking findings.
+10. Update the state file before moving to the next round or reporting status.
 
 If the ChatGPT tab/session loses context, start a fresh conversation only after including: original intent, latest revised artifact, prior round verdicts, accepted changes, rejected findings, and remaining blockers.
+
+If the local agent context is compacted or interrupted, resume from `/tmp/gpt-pro-audit-${REVIEW_ID}-state.md` before taking further action. If the `REVIEW_ID` is unknown, search `/tmp/gpt-pro-audit-*-state.md` by artifact name and latest timestamp.
 
 Stop only when one of these is true:
 
@@ -125,6 +152,8 @@ Stop only when one of these is true:
 - The user explicitly stops the loop.
 
 Track round count and final acceptance status. Do not report the plan as accepted after a `REVISE` or `BLOCKED` verdict, including after the 5-round cap.
+
+After `VERDICT: REVISE` with valid blocking findings, patching the artifact is not completion. The next required action is another audit round or a targeted re-check of the revised sections. If Chrome/browser access fails before that re-check, report the audit as incomplete rather than done.
 
 Present each round in this shape:
 
@@ -145,19 +174,20 @@ VERDICT: APPROVED
 1. Read and follow `Chrome:Chrome`.
 2. Confirm Chrome is available in the Codex app and the user's ChatGPT Pro account is signed in. If Chrome is unavailable or the user lacks ChatGPT Pro access, stop and report the missing prerequisite.
 3. Connect to Chrome and open or reuse `https://chatgpt.com/`.
-4. Select the best available ChatGPT GPT-5.5 Pro (Extended Thinking) option for the user's account. Record the exact visible model and effort setting. If the requested model or effort is unavailable, report what is available and ask whether to continue.
-5. Upload the artifact file when possible. If Chrome file upload fails, use the exact Chrome skill guidance for enabling file uploads, then fall back to pasted content if the user still wants the audit now.
-6. Submit the context package. Wait for the model to finish; long Pro thinking is expected.
-7. Run the multi-round audit loop until the revised plan is accepted, a stopping condition is reached, or 5 rounds have completed.
-8. Extract the final response text and keep the ChatGPT conversation URL for local handoff. Do not paste the URL into public issues, PRs, logs, or docs unless the user asks and the conversation contains no sensitive content.
-9. Before ending browser work, call `browser.tabs.finalize({ keep })`. Keep the ChatGPT tab as `deliverable` only when the conversation itself is useful to the user.
+4. If Temporary Chat/no-history mode is available and appropriate, prefer it for sensitive audits; otherwise tell the user the audit will be visible in their normal ChatGPT history before first submission.
+5. Select the best available ChatGPT GPT-5.5 Pro (Extended Thinking) option for the user's account. Record the exact visible model and effort setting. If the requested model or effort is unavailable, report what is available and ask whether to continue.
+6. Upload or paste according to the Transport Strategy.
+7. Submit the context package. Wait for the model to finish; long Pro thinking is expected. If ChatGPT remains in a finalizing/thinking state, keep waiting or ask it to continue in the same conversation; do not resubmit the whole payload.
+8. Run the multi-round audit loop until the revised plan is accepted, a stopping condition is reached, or 5 rounds have completed.
+9. Extract the final response text and keep the ChatGPT conversation URL for local handoff. Do not paste the URL into public issues, PRs, logs, or docs unless the user asks and the conversation contains no sensitive content.
+10. Before ending browser work, call `browser.tabs.finalize({ keep })`. Keep the ChatGPT tab as `deliverable` only when the conversation itself is useful to the user.
 
 ## Cleanup
 
 Remove session-scoped temp files after the final result:
 
 ```bash
-rm -f /tmp/gpt-pro-audit-${REVIEW_ID}-context.md /tmp/gpt-pro-audit-${REVIEW_ID}-round-*.md
+rm -f /tmp/gpt-pro-audit-${REVIEW_ID}-context.md /tmp/gpt-pro-audit-${REVIEW_ID}-state.md /tmp/gpt-pro-audit-${REVIEW_ID}-round-*.md
 ```
 
 ## Review Handling
@@ -169,6 +199,7 @@ For each ChatGPT finding:
 - If a finding conflicts with user constraints, reject it and explain why.
 - Patch the artifact only after deciding the finding is valid.
 - Re-audit or targeted-check the patched sections when findings were blocking.
+- For untracked files, do not rely on `git diff -- path`; use `git status --short`, read the file directly, and compare against the saved state or prior temp copy.
 
 ## Final Response
 
@@ -177,6 +208,7 @@ Report:
 - artifact reviewed
 - number of audit rounds
 - actual model/session used, if visible
+- whether a normal ChatGPT history record was created or Temporary Chat/no-history was used
 - final ChatGPT verdict and whether the plan was accepted
 - findings accepted and patched
 - findings rejected or left unverified
@@ -190,6 +222,10 @@ Keep it concise. Do not paste the full ChatGPT response unless the user asks.
 - Sending a plan without product constraints, causing generic advice.
 - Passing messages between the agent and ChatGPT without actively revising the artifact.
 - Stopping after one review even when ChatGPT returns `REVISE` or `BLOCKED`.
+- Calling the audit done after patching a `REVISE` finding without sending the revised sections back.
+- Surprising the user with a normal ChatGPT history record instead of disclosing it before submission.
+- Retrying file upload paths repeatedly after the first browser permission failure.
+- Blindly resubmitting a long prompt after a Chrome timeout.
 - Starting a fresh ChatGPT conversation for later rounds without including prior verdicts and changes.
 - Treating ChatGPT's current-events claims as verified.
 - Forgetting to include the user's "do not change" or "no regression" boundaries.
