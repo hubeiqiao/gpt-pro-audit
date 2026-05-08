@@ -1,6 +1,6 @@
 ---
 name: gpt-pro-audit
-description: "Use when the user asks to audit a plan, document, diff, website finding, or implementation proposal with the best available ChatGPT GPT-5.5 Pro (Extended Thinking) option through Chrome - automatically packages codebase/project context ChatGPT cannot see, runs up to 5 review rounds until accepted, verifies the response, and applies only accepted findings."
+description: "Use when the user asks to audit a plan, document, diff, website finding, or implementation proposal with the best available ChatGPT GPT-5.5 Pro (Extended Thinking) option through Chrome - starts automatically after invocation, packages codebase/project context ChatGPT cannot see, runs up to 5 review rounds until accepted, verifies the response, and applies only accepted findings."
 ---
 
 # GPT Pro Audit
@@ -64,7 +64,11 @@ Before submission, perform a sensitivity pass:
 
 For local files, choose the transport using the Transport Strategy below and tell the user when file upload is blocked or paste fallback will be used.
 
-Before the first submission, ask for one explicit confirmation unless the user has already confirmed this exact payload in the current turn. The confirmation must state:
+## Invocation Consent
+
+Invoking this skill is consent to start the audit for the selected non-sensitive artifact. Do not ask the user to say "go", "proceed", or "confirm" before the first submission just because ChatGPT will receive the plan/doc/diff.
+
+Before the first submission, send a short disclosure/status update, then continue automatically. Include:
 
 - what artifact names or sections will be sent
 - approximate payload size and whether it is full, partial, or targeted
@@ -72,7 +76,15 @@ Before the first submission, ask for one explicit confirmation unless the user h
 - the visible ChatGPT model/effort
 - whether the audit will create a normal ChatGPT history record or use Temporary Chat/no-history mode
 
-After confirmation, do not ask again for later rounds unless a new artifact or new sensitive data category would be sent.
+Stop and ask for explicit approval only if one of these is true:
+
+- the payload includes private, proprietary, customer, transcript, billing, production-derived, or otherwise sensitive data
+- a secret, credential, auth token, cookie, private key, or live production log may be included even after redaction
+- the payload is broader than the artifact the user asked to audit
+- the requested ChatGPT model/effort is unavailable and continuing would use a weaker or different mode
+- a very large full-document paste is needed because upload failed and a targeted package would be materially worse
+
+Do not ask again for later rounds unless a new artifact or new sensitive data category would be sent.
 
 ## Transport Strategy
 

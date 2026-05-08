@@ -8,6 +8,8 @@ A reusable Codex/Claude skill that automatically packages codebase context and s
 
 This skill sends selected content to ChatGPT/OpenAI through the user's authenticated account; do not use it for secrets or unredacted sensitive data.
 
+Invoking the skill starts the audit automatically for the selected non-sensitive artifact. It does not require a separate "go" confirmation unless sensitive/private data, a broader-than-requested payload, or a model/access mismatch is involved.
+
 ChatGPT does not know your codebase, local files, current branch, or project constraints. This skill is designed to gather and provide that context automatically so the audit is grounded instead of generic.
 
 ![gpt-pro-audit overview](assets/gpt-pro-audit-hero.jpg)
@@ -15,6 +17,7 @@ ChatGPT does not know your codebase, local files, current branch, or project con
 The skill focuses on:
 
 - packaging enough context for a useful external review
+- starting automatically after invocation for non-sensitive artifacts
 - automatically giving ChatGPT the repo/project context it cannot see
 - using the best available ChatGPT GPT-5.5 Pro (Extended Thinking) option
 - running up to 5 review rounds until GPT Pro accepts the revised plan
@@ -53,7 +56,7 @@ Use gpt-pro-audit to send this plan to ChatGPT GPT-5.5 Pro (Extended Thinking) f
 - A ChatGPT Pro account with access to ChatGPT GPT-5.5 Pro (Extended Thinking), or the strongest available Pro reasoning option.
 - Chrome installed and enabled in the Codex app, with the Chrome connector/plugin available to the agent.
 - An authenticated ChatGPT session in that Chrome profile.
-- User approval before sending any sensitive, private, or proprietary data.
+- User approval only when sensitive/private/proprietary data, a broader-than-requested payload, or a model/access mismatch is involved.
 - Awareness that, unless Temporary Chat or no-history mode is used, the audit appears in the user's normal ChatGPT history.
 
 ## License
