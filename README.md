@@ -50,10 +50,6 @@ Use gpt-pro-audit to send this plan to ChatGPT GPT-5.5 Pro (Extended Thinking) f
 - An authenticated ChatGPT session in that Chrome profile.
 - User approval before sending any sensitive, private, or proprietary data.
 
-## Social Preview
-
-Use `assets/social-preview.jpg` for the GitHub repository social preview. It is 1280×640 and under 1 MB, matching GitHub's recommended best-display size.
-
 ## License
 
 MIT. See [LICENSE](LICENSE).
