@@ -10,7 +10,7 @@ This skill sends selected content to ChatGPT/OpenAI through the user's authentic
 
 ChatGPT does not know your codebase, local files, current branch, or project constraints. This skill is designed to gather and provide that context automatically so the audit is grounded instead of generic.
 
-![gpt-pro-audit social preview](assets/social-preview.jpg)
+![gpt-pro-audit overview](assets/gpt-pro-audit-hero.jpg)
 
 The skill focuses on:
 
