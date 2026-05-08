@@ -51,4 +51,4 @@ Use `assets/social-preview.jpg` for the GitHub repository social preview. It is 
 
 ## License
 
-No license has been selected yet. Add a license before encouraging broad public reuse.
+MIT. See [LICENSE](LICENSE).
