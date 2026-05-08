@@ -1,38 +1,48 @@
 ---
 name: gpt-pro-audit
-description: "Use when the user asks to send a plan, document, diff, website finding, or implementation proposal to ChatGPT GPT-5.5 Pro (Extended Thinking) through Chrome for an external audit - packages context, runs the browser workflow, verifies the response, and applies only accepted findings."
+description: "Use when the user asks to audit a plan, document, diff, website finding, or implementation proposal with the best available ChatGPT GPT-5.5 Pro (Extended Thinking) option through Chrome - automatically packages codebase/project context ChatGPT cannot see, runs the browser workflow, verifies the response, and applies only accepted findings."
 ---
 
 # GPT Pro Audit
 
-Use this skill to get an external audit from the strongest available ChatGPT reasoning model through the user's authenticated Chrome session, preferably ChatGPT GPT-5.5 Pro (Extended Thinking) when available.
+Use this skill to automatically get an external audit from the best available ChatGPT GPT-5.5 Pro (Extended Thinking) option through the user's authenticated Chrome session.
+
+## Prerequisites
+
+- The user has a ChatGPT Pro account with access to ChatGPT GPT-5.5 Pro (Extended Thinking) or the strongest available Pro reasoning option.
+- Chrome is installed and enabled in the Codex app, with the Chrome connector/plugin available to the agent.
+- The user is already signed in to ChatGPT in that Chrome profile, or is ready to sign in before the audit starts.
 
 **REQUIRED SUB-SKILL:** Use `Chrome:Chrome` for all Chrome browser work, or the local Chrome connector/skill with equivalent capabilities.
 
 ## Core Rule
 
-Treat ChatGPT as an external reviewer, not an authority. Package enough context for a useful audit, then verify every important claim against code, local evidence, or primary docs before changing anything.
+Treat ChatGPT as an external reviewer, not an authority. ChatGPT does not know the user's codebase, local files, current branch, project constraints, or prior evidence unless you provide them. Automatically package enough context for a useful audit, then verify every important claim against code, local evidence, or primary docs before changing anything.
 
 ## When To Use
 
 - User mentions `ChatGPT GPT-5.5 Pro (Extended Thinking)`, `GPT-5.5-Pro`, `GPT Pro`, `Extended Thinking`, `ChatGPT audit`, `final audit`, or asks to use `@Chrome` for a review.
 - A plan or implementation needs an adversarial second opinion from the user's ChatGPT account.
 - The artifact is long enough that normal in-thread review may miss context.
+- The user wants a stronger model to audit Codex/Claude work without manually explaining the whole repo.
 
 Never send credentials, API keys, tokens, auth cookies, private keys, seed phrases, unredacted secrets, or live production logs to ChatGPT.
 
 For private, proprietary, customer, transcript, billing, or production-derived data, send only the minimum necessary excerpt after the user explicitly confirms what will be sent. Redact names, emails, account IDs, hostnames, file paths, and other identifying details unless they are necessary for the audit.
 
-## Context Package
+## Automatic Context Package
 
-Before opening ChatGPT, assemble one prompt with:
+Before opening ChatGPT, automatically assemble one prompt with:
 
 1. **Intent:** what the artifact is trying to achieve.
 2. **Artifact:** full plan/doc/diff text, or sanitized repo-relative file paths plus pasted contents. Avoid absolute paths unless necessary; redact usernames, private repo names, client names, and local machine paths.
-3. **Constraints:** product rules, non-goals, safety limits, localization/market assumptions, "do not change" boundaries.
-4. **Evidence:** commands run, source links, browser findings, current metrics, or known blockers.
-5. **Audit focus:** 5-10 specific risks to check.
-6. **Required output format:** verdict, blockers, minor fixes, rejected/uncertain claims, final approval condition.
+3. **Codebase context:** relevant repo structure, touched files, current branch/status when useful, related tests, key functions, public contracts, and neighboring patterns. Prefer concise excerpts over dumping unrelated files.
+4. **Constraints:** product rules, non-goals, safety limits, localization/market assumptions, "do not change" boundaries.
+5. **Evidence:** commands run, source links, browser findings, current metrics, or known blockers.
+6. **Audit focus:** 5-10 specific risks to check.
+7. **Required output format:** verdict, blockers, minor fixes, rejected/uncertain claims, final approval condition.
+
+Do not send a naked plan or diff when repo context is available. If context cannot be gathered, explicitly tell ChatGPT what is missing and ask it to separate confirmed findings from assumptions.
 
 Before submission, perform a sensitivity pass:
 
@@ -46,13 +56,18 @@ If the artifact is a local file, try file upload first. If upload fails, paste t
 ## Prompt Template
 
 ```text
-You are an adversarial external reviewer using ChatGPT GPT-5.5 Pro (Extended Thinking).
+You are an adversarial external reviewer using the best available ChatGPT GPT-5.5 Pro (Extended Thinking) option.
+
+You do not know this codebase except for the context below. Treat missing context as unknown, not as permission to assume.
 
 Intent:
 <what this plan/change is meant to achieve>
 
 Artifact:
 <full pasted content or clear file contents>
+
+Codebase context:
+<relevant repo structure, touched files, code excerpts, tests, contracts, and local patterns>
 
 Constraints and non-goals:
 <repo/product/user constraints>
@@ -78,12 +93,13 @@ Output format:
 ## Chrome Workflow
 
 1. Read and follow `Chrome:Chrome`.
-2. Connect to Chrome and open or reuse `https://chatgpt.com/`.
-3. Confirm the selected model is the strongest available ChatGPT reasoning option for the user's account, preferably ChatGPT GPT-5.5 Pro (Extended Thinking) when available. Record the exact visible model and effort setting. If the requested model or effort is unavailable, report what is available and ask whether to continue.
-4. Upload the artifact file when possible. If Chrome file upload fails, use the exact Chrome skill guidance for enabling file uploads, then fall back to pasted content if the user still wants the audit now.
-5. Submit the context package. Wait for the model to finish; long Pro thinking is expected.
-6. Extract the full response text and keep the ChatGPT conversation URL for local handoff. Do not paste the URL into public issues, PRs, logs, or docs unless the user asks and the conversation contains no sensitive content.
-7. Before ending browser work, call `browser.tabs.finalize({ keep })`. Keep the ChatGPT tab as `deliverable` only when the conversation itself is useful to the user.
+2. Confirm Chrome is available in the Codex app and the user's ChatGPT Pro account is signed in. If Chrome is unavailable or the user lacks ChatGPT Pro access, stop and report the missing prerequisite.
+3. Connect to Chrome and open or reuse `https://chatgpt.com/`.
+4. Select the best available ChatGPT GPT-5.5 Pro (Extended Thinking) option for the user's account. Record the exact visible model and effort setting. If the requested model or effort is unavailable, report what is available and ask whether to continue.
+5. Upload the artifact file when possible. If Chrome file upload fails, use the exact Chrome skill guidance for enabling file uploads, then fall back to pasted content if the user still wants the audit now.
+6. Submit the context package. Wait for the model to finish; long Pro thinking is expected.
+7. Extract the full response text and keep the ChatGPT conversation URL for local handoff. Do not paste the URL into public issues, PRs, logs, or docs unless the user asks and the conversation contains no sensitive content.
+8. Before ending browser work, call `browser.tabs.finalize({ keep })`. Keep the ChatGPT tab as `deliverable` only when the conversation itself is useful to the user.
 
 ## Review Handling
 

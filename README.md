@@ -4,15 +4,19 @@
 
 ## About
 
-A reusable Codex/Claude skill for sending plans, diffs, documents, and implementation proposals to ChatGPT GPT-5.5 Pro (Extended Thinking) through the user's authenticated Chrome session for an external audit.
+A reusable Codex/Claude skill that automatically packages codebase context and sends plans, diffs, documents, and implementation proposals to the best available ChatGPT GPT-5.5 Pro (Extended Thinking) option through the user's authenticated Chrome session for an external audit.
 
 This skill sends selected content to ChatGPT/OpenAI through the user's authenticated account; do not use it for secrets or unredacted sensitive data.
+
+ChatGPT does not know your codebase, local files, current branch, or project constraints. This skill is designed to gather and provide that context automatically so the audit is grounded instead of generic.
 
 ![gpt-pro-audit social preview](assets/social-preview.jpg)
 
 The skill focuses on:
 
 - packaging enough context for a useful external review
+- automatically giving ChatGPT the repo/project context it cannot see
+- using the best available ChatGPT GPT-5.5 Pro (Extended Thinking) option
 - using the Chrome plugin workflow safely
 - avoiding secret/private-data leaks
 - treating ChatGPT as an external reviewer, not an authority
@@ -41,8 +45,9 @@ Use gpt-pro-audit to send this plan to ChatGPT GPT-5.5 Pro (Extended Thinking) f
 
 ## Requirements
 
-- A working Chrome plugin/connector in the agent environment.
-- An authenticated ChatGPT session with access to ChatGPT GPT-5.5 Pro (Extended Thinking).
+- A ChatGPT Pro account with access to ChatGPT GPT-5.5 Pro (Extended Thinking), or the strongest available Pro reasoning option.
+- Chrome installed and enabled in the Codex app, with the Chrome connector/plugin available to the agent.
+- An authenticated ChatGPT session in that Chrome profile.
 - User approval before sending any sensitive, private, or proprietary data.
 
 ## Social Preview
