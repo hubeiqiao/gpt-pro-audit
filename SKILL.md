@@ -32,6 +32,14 @@ For private, proprietary, customer, transcript, billing, or production-derived d
 
 ## Automatic Context Package
 
+Generate a unique review ID before preparing the audit so concurrent reviews do not collide:
+
+```bash
+REVIEW_ID=$(uuidgen | tr '[:upper:]' '[:lower:]' | head -c 8)
+```
+
+When local files are useful, use session-scoped temp paths such as `/tmp/gpt-pro-audit-${REVIEW_ID}-context.md` and `/tmp/gpt-pro-audit-${REVIEW_ID}-round-N.md`. If there is no plan, diff, document, or artifact in the current conversation, ask the user what they want reviewed before opening ChatGPT.
+
 Before opening ChatGPT, automatically assemble one prompt with:
 
 1. **Intent:** what the artifact is trying to achieve.
@@ -40,7 +48,7 @@ Before opening ChatGPT, automatically assemble one prompt with:
 4. **Constraints:** product rules, non-goals, safety limits, localization/market assumptions, "do not change" boundaries.
 5. **Evidence:** commands run, source links, browser findings, current metrics, or known blockers.
 6. **Audit focus:** 5-10 specific risks to check.
-7. **Required output format:** verdict, blockers, minor fixes, rejected/uncertain claims, final approval condition.
+7. **Required output format:** exact verdict line, blockers, minor fixes, rejected/uncertain claims, final approval condition.
 
 Do not send a naked plan or diff when repo context is available. If context cannot be gathered, explicitly tell ChatGPT what is missing and ask it to separate confirmed findings from assumptions.
 
@@ -83,7 +91,7 @@ Audit focus:
 - Current best practice: identify stale assumptions and cite primary sources where possible.
 
 Output format:
-1. Verdict: APPROVED / APPROVED WITH MINOR CHANGES / REVISE / BLOCKED
+1. Verdict line: end with exactly `VERDICT: APPROVED`, `VERDICT: REVISE`, or `VERDICT: BLOCKED`
 2. Blocking findings, each with concrete section/file references and fix
 3. Minor findings
 4. Claims you are uncertain about or that require primary-source verification
@@ -99,19 +107,38 @@ For each round:
 1. Submit the current artifact plus codebase context.
 2. Capture ChatGPT's verdict and findings.
 3. Verify each important finding against local code, evidence, or primary docs.
-4. Apply only findings that are valid and compatible with user constraints.
-5. Prepare a follow-up prompt with the revised artifact, what changed, what was rejected, and any unresolved evidence gaps.
-6. Ask ChatGPT to re-audit only the revised plan and prior blocking findings.
+4. Actively revise the plan or artifact based on valid findings. Do not merely pass messages between the user and ChatGPT.
+5. Skip any revision that contradicts explicit user requirements, and note why it was skipped.
+6. Summarize revisions for the user, one bullet per accepted finding.
+7. Prepare a follow-up prompt with the revised artifact, what changed, what was rejected, and any unresolved evidence gaps.
+8. Continue in the same ChatGPT conversation so prior review context is preserved.
+9. Ask ChatGPT to re-audit only the revised plan and prior blocking findings.
+
+If the ChatGPT tab/session loses context, start a fresh conversation only after including: original intent, latest revised artifact, prior round verdicts, accepted changes, rejected findings, and remaining blockers.
 
 Stop only when one of these is true:
 
-- ChatGPT returns `APPROVED`.
-- ChatGPT returns `APPROVED WITH MINOR CHANGES` and the user accepts that as enough.
+- ChatGPT returns exactly `VERDICT: APPROVED`.
+- ChatGPT gives no exact verdict but has only positive feedback and no actionable findings.
 - Round 5 is complete. If the plan is still not accepted, report the remaining blockers and ask the user before spending more tokens on another round.
 - A prerequisite, privacy issue, model-access issue, or unresolved factual gap blocks further audit.
 - The user explicitly stops the loop.
 
 Track round count and final acceptance status. Do not report the plan as accepted after a `REVISE` or `BLOCKED` verdict, including after the 5-round cap.
+
+Present each round in this shape:
+
+```text
+## GPT Pro Audit — Round N
+
+[ChatGPT feedback summary or excerpt]
+
+### Revisions
+- [What changed and why]
+
+VERDICT: APPROVED
+# or: VERDICT: REVISE / VERDICT: BLOCKED
+```
 
 ## Chrome Workflow
 
@@ -124,6 +151,14 @@ Track round count and final acceptance status. Do not report the plan as accepte
 7. Run the multi-round audit loop until the revised plan is accepted, a stopping condition is reached, or 5 rounds have completed.
 8. Extract the final response text and keep the ChatGPT conversation URL for local handoff. Do not paste the URL into public issues, PRs, logs, or docs unless the user asks and the conversation contains no sensitive content.
 9. Before ending browser work, call `browser.tabs.finalize({ keep })`. Keep the ChatGPT tab as `deliverable` only when the conversation itself is useful to the user.
+
+## Cleanup
+
+Remove session-scoped temp files after the final result:
+
+```bash
+rm -f /tmp/gpt-pro-audit-${REVIEW_ID}-context.md /tmp/gpt-pro-audit-${REVIEW_ID}-round-*.md
+```
 
 ## Review Handling
 
@@ -153,7 +188,9 @@ Keep it concise. Do not paste the full ChatGPT response unless the user asks.
 ## Common Mistakes
 
 - Sending a plan without product constraints, causing generic advice.
+- Passing messages between the agent and ChatGPT without actively revising the artifact.
 - Stopping after one review even when ChatGPT returns `REVISE` or `BLOCKED`.
+- Starting a fresh ChatGPT conversation for later rounds without including prior verdicts and changes.
 - Treating ChatGPT's current-events claims as verified.
 - Forgetting to include the user's "do not change" or "no regression" boundaries.
 - Letting file upload failure stop the audit when paste fallback is acceptable.

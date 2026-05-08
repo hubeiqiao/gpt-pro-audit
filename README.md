@@ -18,6 +18,7 @@ The skill focuses on:
 - automatically giving ChatGPT the repo/project context it cannot see
 - using the best available ChatGPT GPT-5.5 Pro (Extended Thinking) option
 - running up to 5 review rounds until GPT Pro accepts the revised plan
+- actively revising the artifact between rounds instead of just relaying feedback
 - using the Chrome plugin workflow safely
 - avoiding secret/private-data leaks
 - treating ChatGPT as an external reviewer, not an authority
