@@ -1,6 +1,6 @@
 ---
 name: gpt-pro-audit
-description: "Use when the user asks to audit a plan, document, diff, website finding, or implementation proposal with the best available ChatGPT GPT-5.5 Pro (Extended Thinking) option through Chrome - automatically packages codebase/project context ChatGPT cannot see, runs multi-round review until accepted, verifies the response, and applies only accepted findings."
+description: "Use when the user asks to audit a plan, document, diff, website finding, or implementation proposal with the best available ChatGPT GPT-5.5 Pro (Extended Thinking) option through Chrome - automatically packages codebase/project context ChatGPT cannot see, runs up to 5 review rounds until accepted, verifies the response, and applies only accepted findings."
 ---
 
 # GPT Pro Audit
@@ -92,7 +92,7 @@ Output format:
 
 ## Multi-Round Audit Loop
 
-This is not a one-shot review. Continue rounds until ChatGPT accepts the revised plan or a real blocker prevents progress.
+This is not a one-shot review. Continue rounds until ChatGPT accepts the revised plan or a real blocker prevents progress, with a hard cap of 5 audit rounds to control token use.
 
 For each round:
 
@@ -107,10 +107,11 @@ Stop only when one of these is true:
 
 - ChatGPT returns `APPROVED`.
 - ChatGPT returns `APPROVED WITH MINOR CHANGES` and the user accepts that as enough.
+- Round 5 is complete. If the plan is still not accepted, report the remaining blockers and ask the user before spending more tokens on another round.
 - A prerequisite, privacy issue, model-access issue, or unresolved factual gap blocks further audit.
 - The user explicitly stops the loop.
 
-Track round count and final acceptance status. Do not report the plan as accepted after a `REVISE` or `BLOCKED` verdict.
+Track round count and final acceptance status. Do not report the plan as accepted after a `REVISE` or `BLOCKED` verdict, including after the 5-round cap.
 
 ## Chrome Workflow
 
@@ -120,7 +121,7 @@ Track round count and final acceptance status. Do not report the plan as accepte
 4. Select the best available ChatGPT GPT-5.5 Pro (Extended Thinking) option for the user's account. Record the exact visible model and effort setting. If the requested model or effort is unavailable, report what is available and ask whether to continue.
 5. Upload the artifact file when possible. If Chrome file upload fails, use the exact Chrome skill guidance for enabling file uploads, then fall back to pasted content if the user still wants the audit now.
 6. Submit the context package. Wait for the model to finish; long Pro thinking is expected.
-7. Run the multi-round audit loop until the revised plan is accepted or a stopping condition is reached.
+7. Run the multi-round audit loop until the revised plan is accepted, a stopping condition is reached, or 5 rounds have completed.
 8. Extract the final response text and keep the ChatGPT conversation URL for local handoff. Do not paste the URL into public issues, PRs, logs, or docs unless the user asks and the conversation contains no sensitive content.
 9. Before ending browser work, call `browser.tabs.finalize({ keep })`. Keep the ChatGPT tab as `deliverable` only when the conversation itself is useful to the user.
 
