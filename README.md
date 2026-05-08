@@ -1,6 +1,8 @@
 # gpt-pro-audit
 
-[![skills.sh](https://skills.sh/b/hubeiqiao/gpt-pro-audit)](https://skills.sh/hubeiqiao/gpt-pro-audit)
+[![install with skills.sh](https://img.shields.io/badge/skills.sh-install%20gpt--pro--audit-111111)](https://skills.sh/hubeiqiao/gpt-pro-audit/gpt-pro-audit)
+
+## About
 
 A reusable Codex/Claude skill for sending plans, diffs, documents, and implementation proposals to ChatGPT GPT-5.5 Pro (Extended Thinking) through the user's authenticated Chrome session for an external audit.
 
