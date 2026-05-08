@@ -1,6 +1,6 @@
 ---
 name: gpt-pro-audit
-description: "Use when the user asks to audit a plan, document, diff, website finding, or implementation proposal with the best available ChatGPT GPT-5.5 Pro (Extended Thinking) option through Chrome - automatically packages codebase/project context ChatGPT cannot see, runs the browser workflow, verifies the response, and applies only accepted findings."
+description: "Use when the user asks to audit a plan, document, diff, website finding, or implementation proposal with the best available ChatGPT GPT-5.5 Pro (Extended Thinking) option through Chrome - automatically packages codebase/project context ChatGPT cannot see, runs multi-round review until accepted, verifies the response, and applies only accepted findings."
 ---
 
 # GPT Pro Audit
@@ -90,6 +90,28 @@ Output format:
 5. Exact approval condition after fixes
 ```
 
+## Multi-Round Audit Loop
+
+This is not a one-shot review. Continue rounds until ChatGPT accepts the revised plan or a real blocker prevents progress.
+
+For each round:
+
+1. Submit the current artifact plus codebase context.
+2. Capture ChatGPT's verdict and findings.
+3. Verify each important finding against local code, evidence, or primary docs.
+4. Apply only findings that are valid and compatible with user constraints.
+5. Prepare a follow-up prompt with the revised artifact, what changed, what was rejected, and any unresolved evidence gaps.
+6. Ask ChatGPT to re-audit only the revised plan and prior blocking findings.
+
+Stop only when one of these is true:
+
+- ChatGPT returns `APPROVED`.
+- ChatGPT returns `APPROVED WITH MINOR CHANGES` and the user accepts that as enough.
+- A prerequisite, privacy issue, model-access issue, or unresolved factual gap blocks further audit.
+- The user explicitly stops the loop.
+
+Track round count and final acceptance status. Do not report the plan as accepted after a `REVISE` or `BLOCKED` verdict.
+
 ## Chrome Workflow
 
 1. Read and follow `Chrome:Chrome`.
@@ -98,8 +120,9 @@ Output format:
 4. Select the best available ChatGPT GPT-5.5 Pro (Extended Thinking) option for the user's account. Record the exact visible model and effort setting. If the requested model or effort is unavailable, report what is available and ask whether to continue.
 5. Upload the artifact file when possible. If Chrome file upload fails, use the exact Chrome skill guidance for enabling file uploads, then fall back to pasted content if the user still wants the audit now.
 6. Submit the context package. Wait for the model to finish; long Pro thinking is expected.
-7. Extract the full response text and keep the ChatGPT conversation URL for local handoff. Do not paste the URL into public issues, PRs, logs, or docs unless the user asks and the conversation contains no sensitive content.
-8. Before ending browser work, call `browser.tabs.finalize({ keep })`. Keep the ChatGPT tab as `deliverable` only when the conversation itself is useful to the user.
+7. Run the multi-round audit loop until the revised plan is accepted or a stopping condition is reached.
+8. Extract the final response text and keep the ChatGPT conversation URL for local handoff. Do not paste the URL into public issues, PRs, logs, or docs unless the user asks and the conversation contains no sensitive content.
+9. Before ending browser work, call `browser.tabs.finalize({ keep })`. Keep the ChatGPT tab as `deliverable` only when the conversation itself is useful to the user.
 
 ## Review Handling
 
@@ -116,8 +139,9 @@ For each ChatGPT finding:
 Report:
 
 - artifact reviewed
+- number of audit rounds
 - actual model/session used, if visible
-- ChatGPT verdict
+- final ChatGPT verdict and whether the plan was accepted
 - findings accepted and patched
 - findings rejected or left unverified
 - verification commands/checks run
@@ -128,6 +152,7 @@ Keep it concise. Do not paste the full ChatGPT response unless the user asks.
 ## Common Mistakes
 
 - Sending a plan without product constraints, causing generic advice.
+- Stopping after one review even when ChatGPT returns `REVISE` or `BLOCKED`.
 - Treating ChatGPT's current-events claims as verified.
 - Forgetting to include the user's "do not change" or "no regression" boundaries.
 - Letting file upload failure stop the audit when paste fallback is acceptable.
