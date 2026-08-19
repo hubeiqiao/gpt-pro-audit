@@ -4,7 +4,7 @@
 
 ## About
 
-A reusable Codex/Claude skill that automatically packages codebase context and sends plans, diffs, documents, and implementation proposals to the best available ChatGPT GPT-5.5 Pro (Extended Thinking) option through the user's authenticated Chrome session for an external audit.
+A reusable Codex/Claude skill that automatically packages codebase context and sends plans, diffs, documents, and implementation proposals to the strongest available Pro-labelled ChatGPT reasoning model through the user's authenticated Chrome session for an external audit.
 
 This skill sends selected content to ChatGPT/OpenAI through the user's authenticated account; do not use it for secrets or unredacted sensitive data.
 
@@ -19,7 +19,7 @@ The skill focuses on:
 - packaging enough context for a useful external review
 - starting automatically after invocation for non-sensitive artifacts
 - automatically giving ChatGPT the repo/project context it cannot see
-- using the best available ChatGPT GPT-5.5 Pro (Extended Thinking) option
+- verifying and using the strongest available model whose visible name explicitly includes `Pro`
 - running up to 5 review rounds until GPT Pro accepts the revised plan
 - actively revising the artifact between rounds instead of just relaying feedback
 - resuming smoothly after browser slowdowns or context compaction with a local audit state file
@@ -43,17 +43,17 @@ Install from skills.sh-compatible source:
 npx skills add hubeiqiao/gpt-pro-audit
 ```
 
-Or copy `SKILL.md` into a skill folder named `gpt-pro-audit`, then invoke it when you want a ChatGPT GPT-5.5 Pro (Extended Thinking) audit through Chrome.
+Or copy `SKILL.md` into a skill folder named `gpt-pro-audit`, then invoke it when you want a Pro-model audit through Chrome.
 
 Example trigger:
 
 ```text
-Use gpt-pro-audit to send this plan to ChatGPT GPT-5.5 Pro (Extended Thinking) for final audit.
+Use gpt-pro-audit to send this plan to the strongest available Pro-labelled ChatGPT model for final audit.
 ```
 
 ## Requirements
 
-- A ChatGPT Pro account with access to ChatGPT GPT-5.5 Pro (Extended Thinking), or the strongest available Pro reasoning option.
+- Access to a ChatGPT model whose visible model name explicitly includes `Pro`.
 - Chrome installed and enabled in the Codex app, with the Chrome connector/plugin available to the agent.
 - An authenticated ChatGPT session in that Chrome profile.
 - User approval only when sensitive/private/proprietary data, a broader-than-requested payload, or a model/access mismatch is involved.

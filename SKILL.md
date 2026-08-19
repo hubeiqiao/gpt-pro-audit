@@ -1,15 +1,15 @@
 ---
 name: gpt-pro-audit
-description: "Use when the user asks to audit a plan, document, diff, website finding, or implementation proposal with the best available ChatGPT GPT-5.5 Pro (Extended Thinking) option through Chrome - starts automatically after invocation, packages codebase/project context ChatGPT cannot see, runs up to 5 review rounds until accepted, verifies the response, and applies only accepted findings."
+description: "Use when the user asks to audit a plan, document, diff, website finding, or implementation proposal with a Pro-labelled ChatGPT reasoning model through Chrome - starts automatically after invocation, packages codebase/project context ChatGPT cannot see, runs up to 5 review rounds until accepted, verifies the exact model and response, and applies only accepted findings."
 ---
 
 # GPT Pro Audit
 
-Use this skill to automatically get an external audit from the best available ChatGPT GPT-5.5 Pro (Extended Thinking) option through the user's authenticated Chrome session.
+Use this skill to automatically get an external audit from the strongest available Pro-labelled ChatGPT reasoning model through the user's authenticated Chrome session.
 
 ## Prerequisites
 
-- The user has a ChatGPT Pro account with access to ChatGPT GPT-5.5 Pro (Extended Thinking) or the strongest available Pro reasoning option.
+- The user has access to a ChatGPT model whose visible model name explicitly includes `Pro`.
 - Chrome is installed and enabled in the Codex app, with the Chrome connector/plugin available to the agent.
 - The user is already signed in to ChatGPT in that Chrome profile, or is ready to sign in before the audit starts.
 - Unless Temporary Chat or chat history controls are explicitly enabled in ChatGPT, the audit will create a normal ChatGPT conversation in the user's account history.
@@ -20,9 +20,11 @@ Use this skill to automatically get an external audit from the best available Ch
 
 Treat ChatGPT as an external reviewer, not an authority. ChatGPT does not know the user's codebase, local files, current branch, project constraints, or prior evidence unless you provide them. Automatically package enough context for a useful audit, then verify every important claim against code, local evidence, or primary docs before changing anything.
 
+The audit must use a model whose visible model name explicitly includes `Pro`. A `ChatGPT Pro` account label, a high reasoning effort such as `Ultra`, or a non-Pro model running at maximum effort does not satisfy this requirement. If no Pro-labelled model is available, do not submit the audit.
+
 ## When To Use
 
-- User mentions `ChatGPT GPT-5.5 Pro (Extended Thinking)`, `GPT-5.5-Pro`, `GPT Pro`, `Extended Thinking`, `ChatGPT audit`, `final audit`, or asks to use `@Chrome` for a review.
+- User mentions `GPT Pro`, a Pro-labelled ChatGPT model, `ChatGPT audit`, `final audit`, or asks to use `@Chrome` for a review.
 - A plan or implementation needs an adversarial second opinion from the user's ChatGPT account.
 - The artifact is long enough that normal in-thread review may miss context.
 - The user wants a stronger model to audit Codex/Claude work without manually explaining the whole repo.
@@ -81,7 +83,7 @@ Stop and ask for explicit approval only if one of these is true:
 - the payload includes private, proprietary, customer, transcript, billing, production-derived, or otherwise sensitive data
 - a secret, credential, auth token, cookie, private key, or live production log may be included even after redaction
 - the payload is broader than the artifact the user asked to audit
-- the requested ChatGPT model/effort is unavailable and continuing would use a weaker or different mode
+- no Pro-labelled model is available; in that case, stop without submitting and report the visible options rather than continuing with a non-Pro model
 - a very large full-document paste is needed because upload failed and a targeted package would be materially worse
 
 Do not ask again for later rounds unless a new artifact or new sensitive data category would be sent.
@@ -100,7 +102,7 @@ Choose the lowest-friction transport that still gives ChatGPT enough context:
 ## Prompt Template
 
 ```text
-You are an adversarial external reviewer using the best available ChatGPT GPT-5.5 Pro (Extended Thinking) option.
+You are an adversarial external reviewer using <exact visible Pro model and effort>.
 
 You do not know this codebase except for the context below. Treat missing context as unknown, not as permission to assume.
 
@@ -184,10 +186,10 @@ VERDICT: APPROVED
 ## Chrome Workflow
 
 1. Read and follow `Chrome:Chrome`.
-2. Confirm Chrome is available in the Codex app and the user's ChatGPT Pro account is signed in. If Chrome is unavailable or the user lacks ChatGPT Pro access, stop and report the missing prerequisite.
+2. Confirm Chrome is available in the Codex app and the user is signed in to a ChatGPT account with access to a Pro-labelled model. If Chrome or a Pro-labelled model is unavailable, stop and report the missing prerequisite.
 3. Connect to Chrome and open or reuse `https://chatgpt.com/`.
 4. If Temporary Chat/no-history mode is available and appropriate, prefer it for sensitive audits; otherwise tell the user the audit will be visible in their normal ChatGPT history before first submission.
-5. Select the best available ChatGPT GPT-5.5 Pro (Extended Thinking) option for the user's account. Record the exact visible model and effort setting. If the requested model or effort is unavailable, report what is available and ask whether to continue.
+5. Open the model selector and confirm that the selected model's visible name explicitly includes `Pro`. Choose the strongest available Pro-labelled model and the highest appropriate reasoning setting. Record the exact visible model name and effort setting before submission. Do not infer Pro status from the subscription plan, the chat surface, or the effort label. If no Pro-labelled model is available, stop without submitting and report the visible options.
 6. Upload or paste according to the Transport Strategy.
 7. Submit the context package. Wait for the model to finish; long Pro thinking is expected. If ChatGPT remains in a finalizing/thinking state, keep waiting or ask it to continue in the same conversation; do not resubmit the whole payload.
 8. Run the multi-round audit loop until the revised plan is accepted, a stopping condition is reached, or 5 rounds have completed.
