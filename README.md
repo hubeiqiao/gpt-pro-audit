@@ -17,7 +17,7 @@ ChatGPT does not know your codebase, local files, current branch, or project con
 The skill focuses on:
 
 - packaging enough context for a useful external review
-- using connected GitHub with the exact repo, commit, and PR context for coding audits
+- attaching `@GitHub` and the full audit context in one message, with the exact repo, commit, and PR
 - starting automatically after invocation for the selected artifact
 - automatically giving ChatGPT the repo/project context it cannot see
 - verifying that the visible reasoning setting is exactly `Effort Pro`

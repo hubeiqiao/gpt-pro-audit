@@ -195,12 +195,13 @@ VERDICT: APPROVED
 3. Connect to Chrome and open or reuse `https://chatgpt.com/`.
 4. If Temporary Chat/no-history mode is available and appropriate, prefer it for sensitive audits; otherwise tell the user the audit will be visible in their normal ChatGPT history before first submission.
 5. Open the model and reasoning controls. Choose the strongest appropriate model, then confirm that the visible reasoning setting is exactly `Effort Pro`. Record both the exact visible model name and `Effort Pro` before submission. Do not require the model name to include `Pro`, and do not infer Pro effort from the subscription plan or account label. If `Effort Pro` is unavailable, stop without submitting and report the visible effort options.
-6. For coding audits, use ChatGPT's connected GitHub access when available and point it to the exact `owner/repo`, commit SHA, and PR supplied in the context package. Never let it silently audit the default branch instead of the specified commit, and separately include any unpushed local diff because GitHub cannot see it.
+6. For coding audits, use ChatGPT's connected GitHub access in the same composer as the full audit prompt. In an empty composer, type `@GitHub` and select the GitHub app from autocomplete without submitting the message; prefer clicking the autocomplete result when Enter could submit. Verify that the GitHub mention pill is inserted and the message is still unsent. Then paste the complete context package into that same composer, including the exact `owner/repo`, commit SHA, PR when applicable, and any unpushed local diff that GitHub cannot see. Never let ChatGPT silently audit the default branch instead of the specified commit.
 7. Upload or paste according to the Transport Strategy.
-8. Submit the context package. Wait for the model to finish; long Pro thinking is expected. If ChatGPT remains in a finalizing/thinking state, keep waiting or ask it to continue in the same conversation; do not resubmit the whole payload.
-9. Run the multi-round audit loop until the revised plan is accepted, a stopping condition is reached, or 5 rounds have completed.
-10. Extract the final response text and keep the ChatGPT conversation URL for local handoff. Do not paste the URL into public issues, PRs, logs, or docs unless the user asks and the conversation contains no sensitive content.
-11. Before ending browser work, call `browser.tabs.finalize({ keep })`. Keep the ChatGPT tab as `deliverable` only when the conversation itself is useful to the user.
+8. Before submission, verify the composer simultaneously contains the GitHub mention pill, the full audit prompt, the exact repo/ref/PR context, and any intended attachment. Do not submit until that check passes. Never send `@GitHub` alone as a warm-up or activation message. If a mention-only message is sent accidentally, treat that attempt as failed and create a new combined `@GitHub` + full-prompt message; do not rely on the earlier turn to carry GitHub access forward.
+9. Submit the complete composer exactly once and wait for the model to finish; long Pro thinking is expected. If ChatGPT remains in a finalizing/thinking state, keep waiting or ask it to continue in the same conversation; do not resubmit the whole payload.
+10. Run the multi-round audit loop until the revised plan is accepted, a stopping condition is reached, or 5 rounds have completed.
+11. Extract the final response text and keep the ChatGPT conversation URL for local handoff. Do not paste the URL into public issues, PRs, logs, or docs unless the user asks and the conversation contains no sensitive content.
+12. Before ending browser work, call `browser.tabs.finalize({ keep })`. Keep the ChatGPT tab as `deliverable` only when the conversation itself is useful to the user.
 
 ## Cleanup
 
@@ -243,6 +244,7 @@ Use a concrete line such as: `GitHub: PR #1174 in hubeiqiao/real-speaking-v1. Au
 ## Common Mistakes
 
 - Sending a plan without product constraints, causing generic advice.
+- Sending `@GitHub` as a standalone message before the audit prompt instead of attaching both to one submission.
 - Saying only "GitHub" without reporting the exact `owner/repo`, audited commit SHA, and PR when one exists.
 - Requiring `Pro` in the model name instead of verifying the visible `Effort Pro` setting.
 - Mistaking a `ChatGPT Pro` subscription label for the `Effort Pro` reasoning setting.
