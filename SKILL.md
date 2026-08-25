@@ -45,17 +45,18 @@ REVIEW_ID=$(uuidgen | tr '[:upper:]' '[:lower:]' | head -c 8)
 
 When local files are useful, use session-scoped temp paths such as `/tmp/gpt-pro-audit-${REVIEW_ID}-context.md`, `/tmp/gpt-pro-audit-${REVIEW_ID}-state.md`, and `/tmp/gpt-pro-audit-${REVIEW_ID}-round-N.md`. If there is no plan, diff, document, or artifact in the current conversation, ask the user what they want reviewed before opening ChatGPT.
 
-Maintain `/tmp/gpt-pro-audit-${REVIEW_ID}-state.md` throughout the run with: artifact path/name, sanitized payload summary, approximate size, ChatGPT conversation URL, visible model, round count, each verdict, accepted changes, rejected findings, unresolved blockers, and whether ChatGPT history or Temporary Chat was used. Update it before submission and after every round so the loop can resume after context compaction or browser slowdown.
+Maintain `/tmp/gpt-pro-audit-${REVIEW_ID}-state.md` throughout the run with: artifact path/name, sanitized payload summary, approximate size, GitHub `owner/repo` and audited commit/PR for coding work, ChatGPT conversation URL, visible model, round count, each verdict, accepted changes, rejected findings, unresolved blockers, and whether ChatGPT history or Temporary Chat was used. Update it before submission and after every round so the loop can resume after context compaction or browser slowdown.
 
 Before opening ChatGPT, automatically assemble one prompt with:
 
 1. **Intent:** what the artifact is trying to achieve.
-2. **Artifact:** full plan/doc/diff text, or sanitized repo-relative file paths plus pasted contents. Avoid absolute paths unless necessary; redact usernames, private repo names, client names, and local machine paths.
+2. **Artifact:** full plan/doc/diff text, or sanitized repo-relative file paths plus pasted contents. Avoid absolute paths unless necessary; redact usernames, client names, and local machine paths. For coding audits that use connected GitHub access, the exact `owner/repo` is necessary context and must not be redacted.
 3. **Codebase context:** relevant repo structure, touched files, current branch/status when useful, related tests, key functions, public contracts, and neighboring patterns. Prefer concise excerpts over dumping unrelated files.
-4. **Constraints:** product rules, non-goals, safety limits, localization/market assumptions, "do not change" boundaries.
-5. **Evidence:** commands run, source links, browser findings, current metrics, or known blockers.
-6. **Audit focus:** 5-10 specific risks to check.
-7. **Required output format:** exact verdict line, blockers, minor fixes, rejected/uncertain claims, final approval condition.
+4. **GitHub context for coding audits:** the exact `owner/repo`, current branch, full current HEAD commit SHA, and the PR number and URL when one exists. Include the PR head/base branches and do not substitute the default branch for the audited commit. If no PR is associated, say so explicitly.
+5. **Constraints:** product rules, non-goals, safety limits, localization/market assumptions, "do not change" boundaries.
+6. **Evidence:** commands run, source links, browser findings, current metrics, or known blockers.
+7. **Audit focus:** 5-10 specific risks to check.
+8. **Required output format:** exact verdict line, blockers, minor fixes, rejected/uncertain claims, final approval condition.
 
 Do not send a naked plan or diff when repo context is available. If context cannot be gathered, explicitly tell ChatGPT what is missing and ask it to separate confirmed findings from assumptions.
 
@@ -115,6 +116,9 @@ Artifact:
 
 Codebase context:
 <relevant repo structure, touched files, code excerpts, tests, contracts, and local patterns>
+
+GitHub context for coding audits:
+<owner/repo, branch, full HEAD commit SHA, and PR number/URL/head/base when applicable>
 
 Constraints and non-goals:
 <repo/product/user constraints>
@@ -191,11 +195,12 @@ VERDICT: APPROVED
 3. Connect to Chrome and open or reuse `https://chatgpt.com/`.
 4. If Temporary Chat/no-history mode is available and appropriate, prefer it for sensitive audits; otherwise tell the user the audit will be visible in their normal ChatGPT history before first submission.
 5. Open the model and reasoning controls. Choose the strongest appropriate model, then confirm that the visible reasoning setting is exactly `Effort Pro`. Record both the exact visible model name and `Effort Pro` before submission. Do not require the model name to include `Pro`, and do not infer Pro effort from the subscription plan or account label. If `Effort Pro` is unavailable, stop without submitting and report the visible effort options.
-6. Upload or paste according to the Transport Strategy.
-7. Submit the context package. Wait for the model to finish; long Pro thinking is expected. If ChatGPT remains in a finalizing/thinking state, keep waiting or ask it to continue in the same conversation; do not resubmit the whole payload.
-8. Run the multi-round audit loop until the revised plan is accepted, a stopping condition is reached, or 5 rounds have completed.
-9. Extract the final response text and keep the ChatGPT conversation URL for local handoff. Do not paste the URL into public issues, PRs, logs, or docs unless the user asks and the conversation contains no sensitive content.
-10. Before ending browser work, call `browser.tabs.finalize({ keep })`. Keep the ChatGPT tab as `deliverable` only when the conversation itself is useful to the user.
+6. For coding audits, use ChatGPT's connected GitHub access when available and point it to the exact `owner/repo`, commit SHA, and PR supplied in the context package. Never let it silently audit the default branch instead of the specified commit, and separately include any unpushed local diff because GitHub cannot see it.
+7. Upload or paste according to the Transport Strategy.
+8. Submit the context package. Wait for the model to finish; long Pro thinking is expected. If ChatGPT remains in a finalizing/thinking state, keep waiting or ask it to continue in the same conversation; do not resubmit the whole payload.
+9. Run the multi-round audit loop until the revised plan is accepted, a stopping condition is reached, or 5 rounds have completed.
+10. Extract the final response text and keep the ChatGPT conversation URL for local handoff. Do not paste the URL into public issues, PRs, logs, or docs unless the user asks and the conversation contains no sensitive content.
+11. Before ending browser work, call `browser.tabs.finalize({ keep })`. Keep the ChatGPT tab as `deliverable` only when the conversation itself is useful to the user.
 
 ## Cleanup
 
@@ -223,6 +228,7 @@ Report:
 - artifact reviewed
 - number of audit rounds
 - actual model/session used, if visible
+- GitHub context for coding audits: exact `owner/repo`, full audited commit SHA, and PR number when one exists
 - whether a normal ChatGPT history record was created or Temporary Chat/no-history was used
 - final ChatGPT verdict and whether the plan was accepted
 - findings accepted and patched
@@ -232,9 +238,12 @@ Report:
 
 Keep it concise. Do not paste the full ChatGPT response unless the user asks.
 
+Use a concrete line such as: `GitHub: PR #1174 in hubeiqiao/real-speaking-v1. Audited commit: 622e7799aa0e377431e267ed118870aa793599b5.` If no PR exists, report `GitHub: <owner/repo> at commit <full SHA> (no PR identified).`
+
 ## Common Mistakes
 
 - Sending a plan without product constraints, causing generic advice.
+- Saying only "GitHub" without reporting the exact `owner/repo`, audited commit SHA, and PR when one exists.
 - Requiring `Pro` in the model name instead of verifying the visible `Effort Pro` setting.
 - Mistaking a `ChatGPT Pro` subscription label for the `Effort Pro` reasoning setting.
 - Passing messages between the agent and ChatGPT without actively revising the artifact.
